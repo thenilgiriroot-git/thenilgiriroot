@@ -1,0 +1,30 @@
+# Routing rules (Netlify / Cloudflare Pages `_redirects` format).
+#
+# WHY THERE IS NO `/*  /index.html  200` CATCH-ALL
+# ------------------------------------------------
+# The usual SPA rule rewrites every unmatched URL to the app shell with a 200.
+# That makes it impossible for the site to ever return a real 404: mistyped and
+# dead URLs answer "200 OK" with a page that says "not found", which is a soft
+# 404. Google treats those as a crawl-budget drain and may index them.
+#
+# Because `npm run build` prerenders every known route to its own HTML file,
+# real pages resolve as static files and need no rewrite. Anything genuinely
+# unknown falls through to 404.html, which the host serves with a true HTTP 404
+# status.
+#
+# The rules below are the exceptions: routes that are real but cannot be
+# prerendered because their content is dynamic or private.
+
+# Blog articles come from Supabase, so their slugs aren't known at build time.
+/blog/*                 /index.html   200
+
+# Authenticated / non-indexed app routes.
+/admin                  /index.html   200
+/admin/*                /index.html   200
+/auth                   /index.html   200
+/auth/*                 /index.html   200
+/whatsapp-sent          /index.html   200
+/privacy-dashboard      /index.html   200
+/privacy-dashboard/*    /index.html   200
+
+# Everything else: no rule. Unknown paths -> 404.html with HTTP 404.

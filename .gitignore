@@ -1,0 +1,49 @@
+# ─── Secrets ──────────────────────────────────────────────────────────────
+# .env holds live Supabase keys. It was NOT ignored before, which meant the
+# first commit to a shared repo would have published them. Anon/publishable
+# keys are designed to be exposed to browsers, but committing them still:
+#   - hands anyone with repo access the project ref and key in one place
+#   - makes rotation a git-history rewrite rather than a config change
+#   - risks a service_role key being added to the same file later and going
+#     straight into history, which would be a full database compromise
+.env
+.env.*
+!.env.example
+
+# ─── Dependencies & build output ──────────────────────────────────────────
+node_modules
+dist
+dist-ssr
+*.local
+
+# Source GIF masters for the process clips (~43 MB). Kept locally so the
+# transcode can be re-run, but they are not imported and must not bloat the
+# repo — `npm run transcode:stages` regenerates the shipped video from them.
+src/assets/stages/_gif-masters/
+
+# ─── Tooling ──────────────────────────────────────────────────────────────
+.vercel
+.supabase
+*.tsbuildinfo
+coverage
+
+# ─── Logs ─────────────────────────────────────────────────────────────────
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── Editor & OS ──────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

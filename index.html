@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Fonts: preconnect + non-blocking stylesheet (frees render path; only ship used weights).
+         Kept above analytics so the font connections claim their sockets first — GA is
+         async and non-critical, but it competes for connection slots during the exact
+         window the LCP image and webfonts need them. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+    >
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      >
+    </noscript>
+
+    <!--
+      Critical preloader CSS, inlined.
+
+      Must not wait on the bundled stylesheet: that is a separate request, and
+      any gap between first paint and its arrival would flash unstyled markup.
+      Roughly 1.3 KB, so it costs less than the round trip it avoids.
+
+      Timeline (all composited, main thread untouched):
+        0ms     ground paints
+        60ms    mark scales + fades in        (520ms)
+        300ms   wordmark rises                (420ms)
+        460ms   rule wipes left to right      (860ms)
+        1500ms  overlay fades out             (420ms)
+        1920ms  visibility:hidden — self-clears even with no JS
+    -->
+    <style>
+      .tnr-preloader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: hsl(100 10% 96%);
+        animation: tnr-pre-out 420ms cubic-bezier(0.16, 1, 0.3, 1) 1500ms both;
+      }
+      @media (prefers-color-scheme: dark) {
+        .tnr-preloader { background: hsl(140 25% 10%); }
+      }
+      .tnr-preloader__inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .tnr-preloader__mark {
+        width: 108px;
+        height: 108px;
+        transform: scale(0.94);
+        opacity: 0;
+        animation: tnr-pre-mark 520ms cubic-bezier(0.16, 1, 0.3, 1) 60ms forwards;
+      }
+      .tnr-preloader__word {
+        margin: 18px 0 0;
+        font-family: "Playfair Display", Georgia, serif;
+        font-size: 1.25rem;
+        letter-spacing: 0.06em;
+        color: hsl(146 28% 29%);
+        opacity: 0;
+        transform: translateY(8px);
+        animation: tnr-pre-word 420ms cubic-bezier(0.16, 1, 0.3, 1) 300ms forwards;
+      }
+      @media (prefers-color-scheme: dark) {
+        .tnr-preloader__word { color: hsl(145 35% 48%); }
+      }
+      .tnr-preloader__rule {
+        margin-top: 16px;
+        width: 132px;
+        height: 2px;
+        overflow: hidden;
+        background: hsl(146 28% 29% / 0.14);
+      }
+      .tnr-preloader__rule span {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: hsl(120 61% 27%);
+        transform: scaleX(0);
+        transform-origin: left center;
+        animation: tnr-pre-rule 860ms cubic-bezier(0.16, 1, 0.3, 1) 460ms forwards;
+      }
+      @media (prefers-color-scheme: dark) {
+        .tnr-preloader__rule span { background: hsl(145 35% 48%); }
+      }
+      @keyframes tnr-pre-mark {
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes tnr-pre-word {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes tnr-pre-rule {
+        to { transform: scaleX(1); }
+      }
+      @keyframes tnr-pre-out {
+        to { opacity: 0; visibility: hidden; }
+      }
+
+      /* Reduced motion: no sequence at all. The overlay is never shown, so
+         content is revealed immediately rather than animating faster. This is
+         a structural fallback, not a shortened animation. */
+      @media (prefers-reduced-motion: reduce) {
+        .tnr-preloader { display: none; }
+      }
+
+      /* Set by main.tsx once React has mounted, and by the sessionStorage
+         check below on repeat navigation within a session. */
+      .tnr-preloader--done {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1), visibility 0s 320ms;
+      }
+      .tnr-preloader--skip {
+        display: none;
+      }
+    </style>
+    <script>
+      // Show the full intro on the first load of a session only; repeat
+      // navigation within the session skips straight to content. Runs before
+      // paint so there is no flash of a splash the user has already seen.
+      try {
+        if (sessionStorage.getItem("tnr:intro-seen")) {
+          document.documentElement.classList.add("tnr-intro-seen");
+        } else {
+          sessionStorage.setItem("tnr:intro-seen", "1");
+        }
+      } catch (e) {
+        /* private mode — just show the intro */
+      }
+    </script>
+    <style>
+      .tnr-intro-seen .tnr-preloader { display: none; }
+    </style>
+
+    <!-- Google tag (gtag.js) — loaded once sitewide, after the font preconnects.
+         SPA route page_views are emitted from src/lib/analytics.ts via useGaPageviews(). -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RBBGBDDXQL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+
+      // ── DPDP s.6: consent before processing ──────────────────────────────
+      // Consent Mode defaults are set BEFORE the tag initialises, so no
+      // analytics or advertising storage is written until the visitor makes an
+      // affirmative choice. This is the "denied by default" posture the Act
+      // requires; src/lib/consent.ts issues a `consent update` once a decision
+      // is recorded, and re-applies the stored decision on every later load.
+      gtag('consent', 'default', {
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        wait_for_update: 500
+      });
+
+      // Re-apply a previously stored decision immediately, so a returning
+      // visitor who already accepted is measured from the first pageview
+      // rather than waiting for React to hydrate.
+      try {
+        var stored = JSON.parse(localStorage.getItem('tnr:consent') || 'null');
+        if (stored && stored.version === 1 && stored.state) {
+          gtag('consent', 'update', {
+            analytics_storage: stored.state.analytics ? 'granted' : 'denied',
+            ad_storage: stored.state.marketing ? 'granted' : 'denied',
+            ad_user_data: stored.state.marketing ? 'granted' : 'denied',
+            ad_personalization: stored.state.marketing ? 'granted' : 'denied'
+          });
+        }
+      } catch (e) { /* no stored consent — defaults stand */ }
+
+      gtag('js', new Date());
+      // send_page_view: false — we send page_view manually on every SPA route
+      // change so client-side navigation is tracked accurately without
+      // double-firing on initial load.
+      gtag('config', 'G-RBBGBDDXQL', { send_page_view: false });
+    </script>
+
+    <!-- LCP hero image is marked fetchpriority="high" on the <img> tag itself
+         (Vite hashes asset filenames, so a static preload href can't match in production). -->
+    
+    <!-- Primary Meta Tags -->
+    <title>Frozen French Fries Manufacturer in India | The Nilgiri Root</title>
+    <meta name="description" content="The Nilgiri Root is a frozen french fries manufacturer and supplier in India serving distributors, retailers, restaurants, QSRs and bulk buyers. FSSAI certified, blast frozen, 9mm/10mm/11mm cuts.">
+    <meta name="keywords" content="frozen french fries manufacturer in India, frozen french fries supplier in India, bulk frozen french fries supplier, frozen french fries for restaurants, frozen french fries for distributors, frozen fries for QSRs, food service frozen fries supplier, export quality frozen french fries, frozen fries supplier Tamil Nadu, frozen potato products manufacturer, FSSAI certified fries, Nilgiri potatoes, 9mm fries, 10mm fries, 11mm fries">
+    <meta name="author" content="The Nilgiri Root">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow">
+    <meta name="bingbot" content="index, follow">
+
+    <!-- <meta name="google-site-verification" content="YOUR_GOOGLE_CODE"> -->
+    <!-- <meta name="msvalidate.01" content="YOUR_BING_CODE"> -->
+    
+    <!-- Geographic Meta Tags (GEO) -->
+    <meta name="geo.region" content="IN-TN">
+    <meta name="geo.placename" content="Nilgiris, Tamil Nadu">
+    <meta name="geo.position" content="11.43;76.73">
+    <meta name="ICBM" content="11.43, 76.73">
+    
+    <!-- Language & Locale -->
+    <meta name="language" content="English">
+    <meta http-equiv="content-language" content="en-IN">
+    
+    <!-- Apple touch icon + manifest -->
+    <link rel="apple-touch-icon" href="/logo.webp">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://thenilgiriroot.com">
+    
+    <!-- Alternate URLs for hreflang -->
+    <link rel="alternate" hreflang="en" href="https://thenilgiriroot.com">
+    <link rel="alternate" hreflang="x-default" href="https://thenilgiriroot.com">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://thenilgiriroot.com">
+    <meta property="og:site_name" content="The Nilgiri Root">
+    <meta property="og:image" content="https://thenilgiriroot.com/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="The Nilgiri Root Premium Frozen French Fries">
+    <meta property="og:locale" content="en_IN">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://thenilgiriroot.com">
+    <meta name="twitter:image" content="https://thenilgiriroot.com/og-image.jpg">
+    <meta name="twitter:image:alt" content="The Nilgiri Root Premium Frozen French Fries">
+    
+    <!-- App & Theme -->
+    <meta name="theme-color" content="#355E3B">
+    <meta name="msapplication-TileColor" content="#355E3B">
+    <meta name="format-detection" content="telephone=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="The Nilgiri Root">
+    
+    <!-- Structured Data: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "The Nilgiri Root",
+      "alternateName": "Nilgiri Root Frozen Foods",
+      "url": "https://thenilgiriroot.com",
+      "logo": "https://thenilgiriroot.com/logo.png",
+      "description": "India's premium frozen french fries manufacturer transforming locally grown vegetables into blast frozen value added farm products from the Nilgiri mountains.",
+      "foundingDate": "2023",
+      "founder": {
+        "@type": "Person",
+        "name": "Sowmiya Moorthy"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "FJJX+2G4 Sholur",
+        "addressLocality": "Sholur",
+        "addressRegion": "Tamil Nadu",
+        "postalCode": "643005",
+        "addressCountry": "IN"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+91-75399-31361",
+        "contactType": "sales",
+        "email": "admin@thenilgiriroot.com",
+        "availableLanguage": ["English", "Tamil", "Hindi"]
+      },
+      "sameAs": [
+        "https://wa.me/917539931361"
+      ],
+      "areaServed": {
+        "@type": "Country",
+        "name": "India"
+      }
+    }
+    </script>
+    
+    <!-- Structured Data: LocalBusiness -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "@id": "https://thenilgiriroot.com/#business",
+      "name": "The Nilgiri Root",
+      "image": "https://thenilgiriroot.com/logo.png",
+      "description": "Premium frozen french fries manufacturer in Nilgiris, Tamil Nadu. FSSAI certified, blast frozen fries from high-altitude Nilgiri potatoes.",
+      "url": "https://thenilgiriroot.com",
+      "telephone": "+91-75399-31361",
+      "email": "admin@thenilgiriroot.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "FJJX+2G4 Sholur",
+        "addressLocality": "Sholur",
+        "addressRegion": "Tamil Nadu",
+        "postalCode": "643005",
+        "addressCountry": "IN"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 11.43,
+        "longitude": 76.73
+      },
+      "priceRange": "$$",
+      "currenciesAccepted": "INR",
+      "paymentAccepted": "Cash, Bank Transfer, UPI",
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        "opens": "09:00",
+        "closes": "18:00"
+      }
+    }
+    </script>
+    
+    <!-- Structured Data: WebSite -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "The Nilgiri Root",
+      "url": "https://thenilgiriroot.com",
+      "description": "Premium frozen french fries manufacturer in India",
+      "publisher": {
+        "@type": "Organization",
+        "name": "The Nilgiri Root"
+      }
+    }
+    </script>
+    
+    <!-- Structured Data: FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What makes The Nilgiri Root french fries premium?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Our french fries are made from 100% Nilgiri mountain potatoes grown at 2,200m altitude. The cool climate and volcanic soil produce potatoes with superior starch content, resulting in crispier, more flavorful fries. Our blast freezing process locks in colour, texture and freshness from the moment the fries leave the line."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What cut sizes are available?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We offer three cut sizes: 9mm (crisp & quick), 10mm (the all-rounder), and 11mm (steakhouse style). Each cut is available in 500g, 1kg, and 2.5kg packs."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Are your french fries FSSAI certified?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, all our products are FSSAI certified (License No: 12426021000002) and meet the highest food safety standards in India."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do you supply to restaurants and hotels?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, we supply bulk orders to restaurants, hotels, QSR chains, caterers, and retailers across India. Contact us at +91 75399 31361 or admin@thenilgiriroot.com for wholesale pricing."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How are the fries processed and frozen?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Our fries undergo a meticulous multi-step process: sourcing, cleaning, cutting, blanching, par-frying, de-oiling, blast freezing, and food-grade packaging. Our blast freezer rapidly drops the fries to sub-zero temperatures, locking in texture and flavour for a clean, just-made bite."
+          }
+        }
+      ]
+    }
+    </script>
+    
+    <!-- Structured Data: Product -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "Premium Frozen French Fries",
+      "image": "https://thenilgiriroot.com/og-image.jpg",
+      "description": "Premium frozen french fries made from 100% Nilgiri mountain potatoes. Available in 9mm, 10mm, and 11mm cuts. Blast frozen for maximum freshness.",
+      "brand": {
+        "@type": "Brand",
+        "name": "The Nilgiri Root"
+      },
+      "manufacturer": {
+        "@type": "Organization",
+        "name": "The Nilgiri Root"
+      },
+      "category": "Frozen Foods > French Fries",
+      "countryOfOrigin": "India",
+      "offers": {
+        "@type": "AggregateOffer",
+        "priceCurrency": "INR",
+        "availability": "https://schema.org/InStock"
+      },
+      "additionalProperty": [
+        { "@type": "PropertyValue", "name": "Cut Size", "value": "9mm, 10mm, 11mm" },
+        { "@type": "PropertyValue", "name": "Pack Sizes", "value": "500g, 1kg, 2.5kg" },
+        { "@type": "PropertyValue", "name": "Certification", "value": "FSSAI Certified" },
+        { "@type": "PropertyValue", "name": "Processing", "value": "Blast Frozen" }
+      ]
+    }
+    </script>
+    
+    <!-- Structured Data: BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://thenilgiriroot.com" },
+        { "@type": "ListItem", "position": 2, "name": "Products", "item": "https://thenilgiriroot.com/products" },
+        { "@type": "ListItem", "position": 3, "name": "Solutions", "item": "https://thenilgiriroot.com/solutions" },
+        { "@type": "ListItem", "position": 4, "name": "Process", "item": "https://thenilgiriroot.com/process" },
+        { "@type": "ListItem", "position": 5, "name": "Blog", "item": "https://thenilgiriroot.com/blog" },
+        { "@type": "ListItem", "position": 6, "name": "FAQ", "item": "https://thenilgiriroot.com/faq" },
+        { "@type": "ListItem", "position": 7, "name": "Contact", "item": "https://thenilgiriroot.com/contact" }
+      ]
+    }
+    </script>
+
+    <!-- Page-level OG/Twitter tags. SEOHead overwrites these per route at
+         runtime; prerendering bakes the correct per-page values into each
+         route's HTML so crawlers see them without executing JavaScript. -->
+    <meta property="og:title" content="Frozen French Fries Manufacturer in India | The Nilgiri Root">
+  <meta name="twitter:title" content="Frozen French Fries Manufacturer in India | The Nilgiri Root">
+  <meta property="og:description" content="The Nilgiri Root is a frozen french fries manufacturer and supplier in India serving distributors, retailers, restaurants, QSRs and bulk buyers. FSSAI certified, blast frozen, 9mm/10mm/11mm cuts.">
+  <meta name="twitter:description" content="The Nilgiri Root is a frozen french fries manufacturer and supplier in India serving distributors, retailers, restaurants, QSRs and bulk buyers. FSSAI certified, blast frozen, 9mm/10mm/11mm cuts.">
+</head>
+  <body>
+    <!--
+      Brand preloader.
+
+      Lives in the HTML shell rather than in React so it paints on the very
+      first frame, before the bundle has parsed — which is the whole point of a
+      preloader. The previous React implementation could not do this: it only
+      appeared once the JS had downloaded, parsed and mounted, by which time
+      the app was already usable, so on a fast connection it flashed or never
+      appeared at all.
+
+      Every animation here is `transform` or `opacity` only, expressed as CSS
+      keyframes. No JavaScript drives it, so it contributes **zero** to Total
+      Blocking Time — the compositor runs the whole sequence off the main
+      thread while React boots in parallel.
+
+      It is also self-dismissing: the final keyframe sets visibility:hidden, so
+      if the bundle fails to load entirely the overlay still clears rather than
+      trapping the user behind a permanent splash.
+    -->
+    <div id="tnr-preloader" class="tnr-preloader" role="status" aria-label="Loading The Nilgiri Root">
+      <div class="tnr-preloader__inner">
+        <svg class="tnr-preloader__mark" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="tnrLoadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="hsl(146 28% 29%)" />
+              <stop offset="100%" stop-color="hsl(120 61% 27%)" />
+            </linearGradient>
+          </defs>
+          <path
+            fill="url(#tnrLoadGrad)"
+            d="M50 30 C55 30, 58 35, 58 60 L58 170 C58 175, 55 178, 50 178 L42 178 C37 178, 34 175, 34 170 L34 60 C34 35, 37 30, 42 30Z M80 25 C85 25, 88 30, 88 55 L88 175 C88 180, 85 183, 80 183 L72 183 C67 183, 64 180, 64 175 L64 55 C64 30, 67 25, 72 25Z M110 28 C115 28, 118 33, 118 58 L118 172 C118 177, 115 180, 110 180 L102 180 C97 180, 94 177, 94 172 L94 58 C94 33, 97 28, 102 28Z M140 32 C145 32, 148 37, 148 62 L148 168 C148 173, 145 176, 140 176 L132 176 C127 176, 124 173, 124 168 L124 62 C124 37, 127 32, 132 32Z M168 27 C173 27, 176 32, 176 57 L176 174 C176 179, 173 182, 168 182 L160 182 C155 182, 152 179, 152 174 L152 57 C152 32, 155 27, 160 27Z"
+          />
+        </svg>
+        <p class="tnr-preloader__word">The Nilgiri Root</p>
+        <div class="tnr-preloader__rule"><span></span></div>
+      </div>
+    </div>
+
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

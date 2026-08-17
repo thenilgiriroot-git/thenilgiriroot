@@ -1,0 +1,7 @@
+UPDATE blog_posts SET featured_image = 'https://llxvkmnbgmkpiqupppso.supabase.co/storage/v1/object/public/blog-images/cooking-perfect-fries.jpg' WHERE slug = 'how-to-cook-perfect-crispy-french-fries';
+UPDATE blog_posts SET featured_image = 'https://llxvkmnbgmkpiqupppso.supabase.co/storage/v1/object/public/blog-images/iqf-processing.jpg' WHERE slug = 'why-iqf-processing-makes-better-frozen-french-fries';
+UPDATE blog_posts SET featured_image = 'https://llxvkmnbgmkpiqupppso.supabase.co/storage/v1/object/public/blog-images/nilgiri-potatoes.jpg' WHERE slug = 'story-of-nilgiri-potatoes-mountain-farms-to-table';
+UPDATE blog_posts SET featured_image = 'https://llxvkmnbgmkpiqupppso.supabase.co/storage/v1/object/public/blog-images/fssai-certification.jpg' WHERE slug = 'fssai-certification-what-it-means-for-frozen-food';
+UPDATE blog_posts SET featured_image = 'https://llxvkmnbgmkpiqupppso.supabase.co/storage/v1/object/public/blog-images/fry-cuts-comparison.jpg' WHERE slug = '6mm-vs-9mm-choosing-right-french-fry-cut';
+UPDATE blog_posts SET featured_image = 'https://llxvkmnbgmkpiqupppso.supabase.co/storage/v1/object/public/blog-images/frozen-food-industry.jpg' WHERE slug = 'frozen-food-industry-india-trends-opportunities';
+UPDATE blog_posts SET featured_image = 'https://llxvkmnbgmkpiqupppso.supabase.co/storage/v1/object/public/blog-images/reduce-food-waste.jpg' WHERE slug = 'how-restaurants-reduce-food-waste-frozen-french-fries';

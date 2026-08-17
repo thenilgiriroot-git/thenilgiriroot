@@ -1,0 +1,255 @@
+/* Fonts loaded non-blocking via <link rel="preload" + onload> in index.html */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root,
+  .light {
+    --background: 100 10% 96%;
+    --foreground: 150 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 150 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 25% 15%;
+
+    --primary: 146 28% 29%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 100 8% 88%;
+    --secondary-foreground: 150 25% 15%;
+
+    --muted: 100 10% 92%;
+    --muted-foreground: 150 8% 40%;
+
+    /* Accent darkened from 34% to 27% lightness for WCAG 2.1 AA.
+       At 34% it measured 4.36:1 behind white text (buttons) and 4.01:1 as text
+       on the page background (the uppercase eyebrow labels) — both under the
+       4.5:1 minimum for text below 18.66px, which is every place it was used.
+       At 27% it measures 6.31:1 behind white and 5.81:1 as text. Hue and
+       saturation are unchanged, so the brand green reads the same. */
+    --accent: 120 61% 27%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 150 10% 82%;
+    --input: 150 10% 82%;
+    --ring: 120 61% 27%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 100 10% 94%;
+    --sidebar-foreground: 150 25% 15%;
+    --sidebar-primary: 146 28% 29%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 100 10% 92%;
+    --sidebar-accent-foreground: 150 25% 15%;
+    --sidebar-border: 150 10% 82%;
+    --sidebar-ring: 120 61% 27%;
+
+    --forest: 146 28% 29%;
+    --forest-light: 146 22% 40%;
+    --golden: 43 74% 49%;
+    --golden-light: 43 74% 60%;
+    --earth: 50 30% 92%;
+    --earth-light: 50 20% 85%;
+  }
+
+  .dark {
+    --background: 140 25% 10%;
+    --foreground: 40 10% 96%;
+
+    --card: 140 20% 14%;
+    --card-foreground: 40 10% 96%;
+
+    --popover: 140 20% 14%;
+    --popover-foreground: 40 10% 96%;
+
+    --primary: 146 28% 35%;
+    --primary-foreground: 40 10% 96%;
+
+    --secondary: 140 12% 22%;
+    --secondary-foreground: 40 10% 96%;
+
+    --muted: 140 15% 18%;
+    --muted-foreground: 140 5% 60%;
+
+    --accent: 145 35% 48%;
+    --accent-foreground: 140 25% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 140 12% 22%;
+    --input: 140 12% 22%;
+    --ring: 145 35% 48%;
+
+    --sidebar-background: 140 25% 8%;
+    --sidebar-foreground: 40 10% 96%;
+    --sidebar-primary: 146 28% 35%;
+    --sidebar-primary-foreground: 40 10% 96%;
+    --sidebar-accent: 140 15% 18%;
+    --sidebar-accent-foreground: 40 10% 96%;
+    --sidebar-border: 140 12% 22%;
+    --sidebar-ring: 145 35% 48%;
+
+    --forest: 146 28% 35%;
+    --forest-light: 146 22% 45%;
+    --golden: 43 74% 52%;
+    --golden-light: 43 74% 62%;
+    --earth: 140 12% 22%;
+    --earth-light: 140 12% 30%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .text-gradient-golden {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--golden)));
+  }
+
+  .text-gradient-forest {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--forest)), hsl(var(--forest-light)));
+  }
+
+  .glass {
+    @apply bg-background/60 backdrop-blur-xl border border-border/50;
+  }
+
+  .glass-card {
+    @apply bg-card/40 backdrop-blur-lg border border-border/30 rounded-2xl;
+  }
+
+  .glow-golden {
+    box-shadow: 0 0 40px -10px hsl(var(--golden) / 0.3);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 40px -10px hsl(var(--forest) / 0.4);
+  }
+}
+
+/* Scroll animations.
+   Retuned from 1000ms/60px to 320ms/20px. A full second of travel meant
+   sections were still fading in after a fast scroll had already passed them,
+   and it sat well outside the 200-400ms band the motion spec calls for.
+   Only opacity and transform are transitioned — both composited, neither
+   triggers layout. */
+.scroll-stage {
+  @apply opacity-0 translate-y-5;
+  transition-property: opacity, transform;
+  transition-duration: 320ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-stage.visible {
+  @apply opacity-100 translate-y-0;
+}
+
+/* Shared focus ring for interactive elements written as bare <a>/<Link> with
+   utility classes. The shadcn primitives in components/ui/ already ship their
+   own focus-visible treatment; this is for the hand-rolled CTAs that inherit
+   nothing, which previously left keyboard users with no visible focus at all
+   through the navbar, hero and footer. */
+@layer utilities {
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-ring
+           focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-stage {
+    @apply opacity-100 translate-y-0;
+    transition: none !important;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent) / 0.5);
+}
+
+/* =============================================================
+   Cinematic image grade — applied to brand storytelling photos
+   (mission, vision, story). Single source of truth so every
+   page renders the same warm, slightly-desaturated, contrast-rich
+   filmic look. Keeps both the JPG/WEBP source files free of
+   bake-in grading and lets us re-tune in one place.
+   ============================================================= */
+@layer utilities {
+  .img-cinematic {
+    filter: contrast(1.06) saturate(0.92) brightness(0.98)
+      sepia(0.05) hue-rotate(-5deg);
+  }
+  .img-cinematic-frame {
+    position: relative;
+    isolation: isolate;
+  }
+  /* Subtle teal-orange split-tone wash + soft vignette for depth */
+  .img-cinematic-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at center, transparent 55%, hsl(150 30% 8% / 0.28) 100%),
+      linear-gradient(180deg, hsl(35 60% 55% / 0.06) 0%, transparent 35%, hsl(200 50% 25% / 0.10) 100%);
+    mix-blend-mode: soft-light;
+    z-index: 1;
+  }
+}

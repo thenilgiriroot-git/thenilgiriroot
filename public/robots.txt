@@ -1,0 +1,29 @@
+# Robots.txt for The Nilgiri Root
+# https://thenilgiriroot.com
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /functions/
+
+# Search engine specific
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Social media bots
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# Sitemap
+Sitemap: https://thenilgiriroot.com/sitemap.xml

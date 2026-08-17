@@ -1,0 +1,56 @@
+# Long-cache hashed build assets (Vite emits content-hashed filenames)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Stage process clips are content-hashed by Vite and land under /assets/,
+# so they inherit the immutable rule above. Range requests must be allowed
+# for <video> seeking to work on Safari.
+/assets/*.mp4
+  Accept-Ranges: bytes
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.webm
+  Accept-Ranges: bytes
+  Cache-Control: public, max-age=31536000, immutable
+
+# Long-cache static brand/image files
+/logo.webp
+  Cache-Control: public, max-age=31536000, immutable
+/og-image.jpg
+  Cache-Control: public, max-age=31536000, immutable
+/og-image.webp
+  Cache-Control: public, max-age=31536000, immutable
+/favicon.ico
+  Cache-Control: public, max-age=31536000, immutable
+/fssai-license.pdf
+  Cache-Control: public, max-age=2592000
+
+# HTML shells — never cache so the SPA gets fresh bundle hashes.
+# Prerendered routes are written as <route>/index.html, so cover both the
+# root shell and the nested ones.
+/*.html
+  Cache-Control: no-cache, must-revalidate, max-age=0
+/
+  Cache-Control: no-cache, must-revalidate, max-age=0
+/*/
+  Cache-Control: no-cache, must-revalidate, max-age=0
+
+# Sitewide security headers (HTML and everything else)
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), interest-cohort=()
+  # ENFORCING. This was previously Content-Security-Policy-Report-Only with no
+  # report-uri, which meant it did nothing at all: violations were neither
+  # blocked nor recorded. Origins below were verified against everything the
+  # built bundle actually requests (Google Fonts, GA/GTM, Supabase REST +
+  # functions, IndexNow, wa.me).
+  #
+  # 'unsafe-inline'/'unsafe-eval' on script-src are required by the GA
+  # bootstrap snippet and Vite's runtime; tightening those needs a nonce and is
+  # tracked separately.
+  #
+  # Rollback: rename the key back to Content-Security-Policy-Report-Only.
+  # Smoke-test on staging before the first production deploy — a CSP failure is
+  # silent to the server and visible only in the browser console.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://api.indexnow.org; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://wa.me; frame-ancestors 'none'; upgrade-insecure-requests
