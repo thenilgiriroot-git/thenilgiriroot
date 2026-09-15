@@ -68,7 +68,6 @@ export default function PrivacyPolicy() {
             <tr><th scope="row">Registered name</th><td><Fact value={E.registeredName} /></td></tr>
             <tr><th scope="row">Entity type</th><td><Fact value={E.entityType} /></td></tr>
             <tr><th scope="row">Registration number</th><td><Fact value={E.registrationNumber} /></td></tr>
-            <tr><th scope="row">GSTIN</th><td><Fact value={E.gstin} /></td></tr>
             <tr><th scope="row">FSSAI licence</th><td>{E.fssaiLicence}</td></tr>
             <tr><th scope="row">Registered office</th><td><Fact value={E.registeredAddress} /></td></tr>
             <tr><th scope="row">Operations</th><td>{E.operationalAddress}</td></tr>

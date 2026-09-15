@@ -87,13 +87,18 @@ export interface LegalEntity {
 
 export const LEGAL_ENTITY: LegalEntity = {
   tradingName: "The Nilgiri Root",
-  registeredName: "TODO: full registered legal name from your Certificate of Incorporation",
-  entityType: "TODO: Private Limited / LLP / Partnership / Sole Proprietorship",
-  registrationNumber: "TODO: CIN, LLPIN or firm registration number",
-  gstin: "TODO: GSTIN",
+  registeredName: "TODO: full registered legal name of the firm, as filed with the Registrar of Firms / GST registration",
+  entityType: "Firm",
+  registrationNumber: "TODO: firm registration number",
+  // Deliberately NOT stored here: this file ships in the client-side JS
+  // bundle, so anything placed here is public regardless of whether a page
+  // renders it. The business has asked that the GSTIN not be disclosed
+  // publicly anywhere on the site — keep it out of source entirely and
+  // manage it through non-public channels (invoices, private correspondence).
+  gstin: "TODO: GSTIN — intentionally withheld from this public-facing bundle; see comment above",
   fssaiLicence: "12426021000002",
 
-  registeredAddress: "TODO: registered office address as filed with the MCA",
+  registeredAddress: "TODO: registered office address on file with the GST registration",
   operationalAddress: "FJJX+2G4 Sholur, Sholur, The Nilgiris, Tamil Nadu 643005, India",
 
   websiteUrl: "https://thenilgiriroot.com",
@@ -104,7 +109,7 @@ export const LEGAL_ENTITY: LegalEntity = {
     name: "Sowmiya Moorthy",
     designation: "TODO: their designation — the site's Organization schema already lists them as Founder; confirm whether that is the title to publish here",
     email: "contact@thenilgiriroot.com",
-    phone: "TODO: direct contact number (the general line +91 75399 31361 is acceptable if monitored for grievances)",
+    phone: "+91 95856 31361",
     postalAddress: "TODO: postal address for written grievances (the Sholur operational address is acceptable if post is received there)",
     responseDays: 30,
   },
@@ -116,7 +121,7 @@ export const LEGAL_ENTITY: LegalEntity = {
     email: "TODO: only required if designated a Significant Data Fiduciary",
   },
 
-  jurisdiction: "TODO: courts of <city>, Tamil Nadu",
+  jurisdiction: "The Nilgiris, Tamil Nadu",
 
   effectiveDate: "TODO: YYYY-MM-DD the policies go live",
   lastUpdated: "TODO: YYYY-MM-DD",
