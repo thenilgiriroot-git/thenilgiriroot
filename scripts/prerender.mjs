@@ -22,6 +22,8 @@ import { join, extname, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
+import puppeteerCore from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DIST = join(ROOT, "dist");
@@ -108,14 +110,30 @@ const routes = [...(await loadRoutes()), NOT_FOUND_PROBE];
 // makes every later launch fail with a misleading "browser is already running".
 const userDataDir = join(tmpdir(), `tnr-prerender-${process.pid}-${Date.now()}`);
 
-const browser = await puppeteer.launch({
-  // `headless: true` — not the old "new" string, which Puppeteer 25 no longer
-  // accepts. An invalid value here fails inside the launch and surfaces as the
-  // same misleading "already running" error, so keep it boolean.
-  headless: true,
-  userDataDir,
-  args: ["--no-sandbox", "--disable-dev-shm-usage"],
-});
+// Vercel's build image doesn't ship the shared libraries (libnspr4, libnss3,
+// ...) that full Puppeteer's bundled Chrome needs — the launch fails with
+// "error while loading shared libraries". @sparticuz/chromium bundles a
+// statically-linked Chromium built for exactly this kind of serverless/CI
+// sandbox, so use it there; a real local dev machine has no such problem and
+// keeps using regular Puppeteer's own Chrome.
+const onVercel = !!process.env.VERCEL;
+
+const browser = onVercel
+  ? await puppeteerCore.launch({
+      headless: true,
+      userDataDir,
+      args: [...chromium.args, "--no-sandbox", "--disable-dev-shm-usage"],
+      executablePath: await chromium.executablePath(),
+    })
+  : await puppeteer.launch({
+      // `headless: true` — not the old "new" string, which Puppeteer 25 no
+      // longer accepts. An invalid value here fails inside the launch and
+      // surfaces as the same misleading "already running" error, so keep it
+      // boolean.
+      headless: true,
+      userDataDir,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
 
 let ok = 0;
 const failed = [];
