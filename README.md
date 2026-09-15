@@ -68,12 +68,39 @@ Supabase — forms, blog, consent logging — will fail until they're set.
 | `npm run dev` | Start the Vite dev server. |
 | `npm run build` | Production build: generates the sitemap, runs `vite build`, then prerenders every route to static HTML. |
 | `npm run build:fast` | `vite build` only, skipping sitemap/prerender — useful for a quick local sanity check. |
+| `npm run build:vercel` | Sitemap + `vite build`, **without** prerendering. This is what Vercel's `buildCommand` actually runs (see `vercel.json`) — see the callout below. |
 | `npm run preview` | Serve the production build locally. |
 | `npm run lint` | ESLint. |
 | `npm run typecheck` | `tsc --noEmit`. |
 | `npm run test` / `test:watch` | Vitest. |
 | `npm run legal:check` | Lists every unresolved `TODO:` fact in `src/data/legalEntity.ts` that must be filled in before launch (registered name, GSTIN, grievance officer, etc.) — see that file's header comment for why these can't be guessed. |
 | `npm run transcode:stages` | Regenerates the shipped process-page videos from the local GIF masters in `src/assets/stages/_gif-masters/` (not committed — see `.gitignore`). |
+
+## Known gap: prerendering is disabled on Vercel
+
+`npm run build` normally ends with `npm run prerender` (see `scripts/prerender.mjs`),
+which uses headless Chrome to bake real HTML into every route so crawlers that
+don't execute JavaScript (Bing, LinkedIn, WhatsApp, X, and most AI crawlers)
+see real content instead of an empty `<div id="root">`. This matters a lot
+here — the SEO strategy leans on thirteen keyword landing pages plus a blog.
+
+**This step is currently skipped on Vercel.** Vercel's build image is missing
+shared libraries that both full Puppeteer's bundled Chrome and
+`@sparticuz/chromium` (the usual serverless-Chromium fix) need at runtime —
+`error while loading shared libraries: libnss3.so`. Rather than ship a broken
+deploy while chasing the exact right Chromium build, `vercel.json` points
+`buildCommand` at `npm run build:vercel`, which stops after `vite build` and
+skips `npm run prerender` entirely. Every route still works (the SPA still
+renders client-side), but crawlers that don't run JavaScript will only see
+the static homepage meta tags on every URL — the exact problem prerendering
+was built to fix.
+
+**Follow-up needed:** run prerendering in an environment that actually has
+Chrome's dependencies — a GitHub Actions job on the standard Ubuntu runner
+(which has them, or can `apt-get install` what's missing) that runs
+`npm run build` in full and deploys the result with `vercel deploy --prebuilt`
+instead of letting Vercel run the build. Local `npm run build` is unaffected
+and still prerenders correctly.
 
 ## Branching & deployment workflow
 
