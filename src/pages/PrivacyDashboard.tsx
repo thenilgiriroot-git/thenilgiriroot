@@ -1,6 +1,6 @@
-import { useState, useId } from "react";
-import { Link } from "react-router-dom";
-import { Check, Loader2, ShieldCheck, FileText, Pencil, Trash2, UserMinus, Users, MessageSquareWarning } from "lucide-react";
+import { useState, useId, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Check, Loader2, ShieldCheck, FileText, Pencil, Trash2, UserMinus, Users, MessageSquareWarning, AlertTriangle } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -180,6 +180,7 @@ export default function PrivacyDashboard() {
         </section>
 
         {/* ── Rights request ──────────────────────────────────────────── */}
+        <VerificationBanner />
         <RightsRequestForm />
 
         {/* ── Grievance officer ───────────────────────────────────────── */}
@@ -220,6 +221,91 @@ export default function PrivacyDashboard() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
+
+type VerifyOutcome =
+  | { state: "idle" }
+  | { state: "verifying" }
+  | { state: "success"; reference: string }
+  | { state: "error"; message: string };
+
+function VerificationBanner() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [outcome, setOutcome] = useState<VerifyOutcome>({ state: "idle" });
+
+  useEffect(() => {
+    const token = searchParams.get("verify");
+    const reference = searchParams.get("ref");
+    if (!token || !reference) return;
+
+    let cancelled = false;
+    setOutcome({ state: "verifying" });
+
+    (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error } = await supabase.functions.invoke("dp-request", {
+          body: { action: "verify", token, reference },
+        });
+        if (cancelled) return;
+
+        if (error) throw error;
+        const result = data as { ok?: boolean; error?: string } | null;
+        if (!result?.ok) {
+          setOutcome({ state: "error", message: result?.error ?? "This verification link is invalid." });
+          return;
+        }
+        setOutcome({ state: "success", reference });
+      } catch (err) {
+        if (cancelled) return;
+        console.error("dp-request verify failed", errorMessage(err));
+        setOutcome({ state: "error", message: "We couldn't confirm this link. Please try again or contact us directly." });
+      } finally {
+        // Strip the token from the URL either way so a refresh or shared link
+        // doesn't re-submit it, and so the token never lingers in history.
+        if (!cancelled) {
+          const next = new URLSearchParams(searchParams);
+          next.delete("verify");
+          next.delete("ref");
+          setSearchParams(next, { replace: true });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Only ever run this once for whatever verify/ref were present on load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (outcome.state === "idle") return null;
+
+  return (
+    <section aria-live="polite" className="mt-12">
+      {outcome.state === "verifying" && (
+        <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-5 font-body text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+          Confirming your request…
+        </div>
+      )}
+      {outcome.state === "success" && (
+        <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
+          <Check className="h-6 w-6 text-accent" aria-hidden="true" />
+          <p className="mt-2 font-body text-sm leading-relaxed text-foreground">
+            Confirmed. Reference <code className="rounded bg-background px-1.5 py-0.5 font-mono">{outcome.reference}</code>{" "}
+            is now being actioned — we'll respond within {E.grievanceOfficer.responseDays} days.
+          </p>
+        </div>
+      )}
+      {outcome.state === "error" && (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
+          <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden="true" />
+          <p className="mt-2 font-body text-sm leading-relaxed text-foreground">{outcome.message}</p>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function RightsRequestForm() {
   const { record } = useConsent();

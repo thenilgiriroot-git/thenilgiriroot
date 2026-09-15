@@ -1,73 +1,126 @@
-# Welcome to your Lovable project
+# The Nilgiri Root — website
 
-## Project info
+Marketing site, blog and B2B lead-capture forms for The Nilgiri Root
+(frozen French fries exporter). Vite + React + TypeScript + shadcn/ui on
+the frontend, Supabase (Postgres + Edge Functions) on the backend,
+deployed to Vercel.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Originally scaffolded on Lovable; now developed and deployed directly
+from this repository.
 
-## How can I edit this code?
+## Stack
 
-There are several ways of editing your application.
+- **Frontend**: Vite, React 18, TypeScript, React Router, Tailwind CSS,
+  shadcn/ui, TanStack Query, Framer Motion.
+- **Backend**: Supabase — Postgres with row-level security, and Deno
+  Edge Functions for anything that needs a service-role key or a secret
+  (lead intake, consent logging, DPDP rights requests, the RootBot
+  assistant, transactional email).
+- **Build-time**: `scripts/generate-sitemap.mjs` builds `sitemap.xml`
+  from the route manifest plus published blog posts, and
+  `scripts/prerender.mjs` uses headless Chrome to bake real per-route
+  HTML into `dist/` so crawlers and social-share unfurls see correct
+  content even though this is a client-rendered SPA.
+- **Deployment**: Vercel, built from this GitHub repository.
 
-**Use Lovable**
+## Getting started
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Requires Node.js (see `.nvmrc`/`package.json` engines if present, or use
+a current LTS) and npm.
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+git clone https://github.com/thenilgiriroot-git/thenilgiriroot.git
+cd thenilgiriroot
+npm install
+cp .env.example .env   # then fill in the Supabase key, see below
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Environment variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Copy `.env.example` to `.env` and fill in the blanks. `.env` is
+gitignored and must never be committed — see the comment block at the
+top of `.gitignore` for why.
 
-**Use GitHub Codespaces**
+| Variable | Used by | Notes |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Browser bundle | Public by definition — Vite inlines `VITE_*` vars into the JS bundle. |
+| `VITE_SUPABASE_PROJECT_ID` | Browser bundle | Same as above. |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser bundle | The **anon/public** key only. Get it from Supabase Dashboard → Project Settings → API. |
+| `SUPABASE_URL` | Build-time only (`scripts/generate-sitemap.mjs`) | Not shipped to the browser. |
+| `SUPABASE_PUBLISHABLE_KEY` | Build-time only | Same key as above, used server-side during the build. |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+**Never** put `SUPABASE_SERVICE_ROLE_KEY` in `.env` or in Vercel's
+frontend env vars — it bypasses row-level security entirely. It belongs
+only in Supabase Edge Function secrets (`supabase secrets set …`),
+where the functions in `supabase/functions/` read it via `Deno.env` at
+runtime.
 
-## What technologies are used for this project?
+If `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` are missing, the
+app degrades gracefully instead of crashing (see
+`src/integrations/supabase/client.ts`), but anything that talks to
+Supabase — forms, blog, consent logging — will fail until they're set.
 
-This project is built with:
+## Available scripts
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Start the Vite dev server. |
+| `npm run build` | Production build: generates the sitemap, runs `vite build`, then prerenders every route to static HTML. |
+| `npm run build:fast` | `vite build` only, skipping sitemap/prerender — useful for a quick local sanity check. |
+| `npm run preview` | Serve the production build locally. |
+| `npm run lint` | ESLint. |
+| `npm run typecheck` | `tsc --noEmit`. |
+| `npm run test` / `test:watch` | Vitest. |
+| `npm run legal:check` | Lists every unresolved `TODO:` fact in `src/data/legalEntity.ts` that must be filled in before launch (registered name, GSTIN, grievance officer, etc.) — see that file's header comment for why these can't be guessed. |
+| `npm run transcode:stages` | Regenerates the shipped process-page videos from the local GIF masters in `src/assets/stages/_gif-masters/` (not committed — see `.gitignore`). |
 
-## How can I deploy this project?
+## Branching & deployment workflow
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- `main` — production. Deploys to `thenilgiriroot.com` on Vercel.
+- `staging` — pre-production integration branch. Deploys to a Vercel
+  preview URL for stakeholder review before merging to `main`.
+- `development` — active feature work branches off this.
 
-## Can I connect a custom domain to my Lovable project?
+Open pull requests into `development` → `staging` → `main`. Vercel
+automatically builds a preview deployment for every pull request.
 
-Yes, you can!
+## Backend (Supabase)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- **Migrations**: `supabase/migrations/` — includes the core schema
+  (leads, blog, analytics events) and a DPDP Act (India) compliance
+  migration (`*_dpdp_compliance.sql`) adding consent logging, data
+  subject request tracking, guardian consents, breach register and a
+  processing-activities register. All of these tables are RLS-enabled
+  with no client-facing policies — every write goes through an Edge
+  Function running as service role.
+- **Edge Functions**: `supabase/functions/` — `submit-lead` (rate
+  limited, deduplicated, honeypot-checked form intake),
+  `contact-fallback`, `consent-log`, `dp-request` (DPDP rights
+  requests), `rootbot-chat`, `admin-stats`, `generate-blog-post`,
+  `indexnow-submit`, `security-alerts`, `process-email-queue`,
+  `auth-email-hook`.
+- Deploy functions with the Supabase CLI: `supabase functions deploy
+  <name>`. Apply migrations with `supabase db push` or via the
+  dashboard SQL editor.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Legal & compliance content
+
+`src/data/legalEntity.ts` is the single source of truth for every
+organisation-specific fact shown in the Privacy Policy, Terms, Cookie
+Policy and consent flows (registered name, GSTIN, grievance officer,
+retention periods, etc.). Read the header comment in that file before
+editing it — some fields are deliberately marked `TODO:` rather than
+guessed, and the GSTIN is deliberately **not** stored there since
+anything in this file ships in the public browser bundle regardless of
+whether a page renders it. Run `npm run legal:check` to see what's
+still outstanding. See `COMPLIANCE-HANDOVER.md` for the full DPDP
+remediation history and what's still pending (verification email
+wiring, breach-notification process, retention enforcement job).
+
+## Further reading
+
+- `DOCS.md` — architecture notes, the v3.0 remediation history
+  (performance/SEO/accessibility fixes), and known limitations.
+- `COMPLIANCE-HANDOVER.md` — DPDP Act compliance implementation detail
+  and outstanding items.

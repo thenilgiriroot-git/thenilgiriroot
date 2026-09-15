@@ -16,6 +16,13 @@
  * address, so this endpoint cannot be used to enumerate customers.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as React from "npm:react@18.3.1";
+import { renderAsync } from "npm:@react-email/components@0.0.22";
+import { DpRequestVerificationEmail } from "../_shared/email-templates/dp-request-verification.tsx";
+
+const SITE_NAME = "The Nilgiri Root";
+const ROOT_DOMAIN = "thenilgiriroot.com";
+const FROM_DOMAIN = "thenilgiriroot.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +43,7 @@ const REQUEST_TYPES = new Set([
 ]);
 
 interface Payload {
+  action?: unknown;
   request_type?: unknown;
   email?: unknown;
   full_name?: unknown;
@@ -44,6 +52,9 @@ interface Payload {
   consent_receipt_id?: unknown;
   /** Honeypot — must be empty. */
   website?: unknown;
+  /** Only present when action === "verify". */
+  token?: unknown;
+  reference?: unknown;
 }
 
 const isStr = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
@@ -70,6 +81,10 @@ Deno.serve(async (req: Request) => {
     body = await req.json();
   } catch {
     return json({ error: "Invalid JSON body" }, 400);
+  }
+
+  if (body.action === "verify") {
+    return handleVerify(body);
   }
 
   // Honeypot. Answer as if accepted so a bot gains no signal.
@@ -151,17 +166,143 @@ Deno.serve(async (req: Request) => {
   });
   if (eventError) console.warn("dp-request event log failed", eventError.message);
 
-  // TODO(handover): send the verification email containing
-  //   {SITE_URL}/privacy-dashboard?verify={token}&ref={reference}
-  // The project already has an email queue (enqueue_email) and templates under
-  // supabase/functions/_shared/email-templates — wire this in once the sender
-  // identity and template copy are approved.
-  console.info(
-    `[dp-request] ${reference} (${body.request_type}) awaiting verification for ${email}`,
-  );
+  await sendVerificationEmail(supabase, {
+    email,
+    requestType: body.request_type,
+    reference,
+    token,
+  });
 
   return json({ ok: true, reference, response_days: RESPONSE_DAYS }, 200);
 });
+
+/**
+ * Confirms a request via the one-time token emailed to the requester. Unlike
+ * the initial submission, an identical response here is not required —
+ * whoever holds the 256-bit token already has all the proof of ownership
+ * this system relies on, so there is nothing left to hide by being vague.
+ */
+async function handleVerify(body: Payload): Promise<Response> {
+  if (!isStr(body.token) || !isStr(body.reference)) {
+    return json({ ok: false, error: "Missing or invalid verification link." }, 400);
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
+  );
+
+  const { data: reqRow, error: fetchError } = await supabase
+    .from("data_principal_requests")
+    .select("id, status, verified_at, verification_token, token_expires_at, request_type")
+    .eq("reference", body.reference)
+    .maybeSingle();
+
+  if (fetchError || !reqRow || reqRow.verification_token !== body.token) {
+    return json({ ok: false, error: "This verification link is invalid." }, 400);
+  }
+
+  if (reqRow.verified_at) {
+    // Already verified — treat repeat clicks as success rather than an error.
+    return json({ ok: true, reference: body.reference, already_verified: true }, 200);
+  }
+
+  if (!reqRow.token_expires_at || new Date(reqRow.token_expires_at).getTime() < Date.now()) {
+    return json(
+      { ok: false, error: "This verification link has expired. Please submit your request again." },
+      400,
+    );
+  }
+
+  const nowIso = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from("data_principal_requests")
+    .update({ verified_at: nowIso, status: "in_progress" })
+    .eq("id", reqRow.id);
+
+  if (updateError) {
+    console.error("dp-request verify update failed", updateError.message);
+    return json({ ok: false, error: "We couldn't confirm this right now. Please try again shortly." }, 500);
+  }
+
+  await supabase.from("data_principal_request_events").insert({
+    request_id: reqRow.id,
+    from_status: reqRow.status,
+    to_status: "in_progress",
+    note: "Requester confirmed via emailed verification link",
+    actor: "system",
+  });
+
+  return json({ ok: true, reference: body.reference, already_verified: false }, 200);
+}
+
+/**
+ * Emails the one-time verification link. Failure here must never surface to
+ * the caller — the request is already recorded and the public response is
+ * deliberately identical regardless of whether we hold data for the address,
+ * so a caller can't tell a delivery failure from "nothing found" anyway.
+ * Any failure is logged for the grievance officer to catch from function logs.
+ */
+async function sendVerificationEmail(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  opts: { email: string; requestType: string; reference: string; token: string },
+) {
+  try {
+    const verificationUrl =
+      `https://${ROOT_DOMAIN}/privacy-dashboard?verify=${opts.token}&ref=${opts.reference}`;
+
+    const props = {
+      siteName: SITE_NAME,
+      requestType: opts.requestType,
+      reference: opts.reference,
+      verificationUrl,
+      responseDays: RESPONSE_DAYS,
+    };
+
+    const html = await renderAsync(React.createElement(DpRequestVerificationEmail, props));
+    const text = await renderAsync(React.createElement(DpRequestVerificationEmail, props), {
+      plainText: true,
+    });
+
+    const messageId = crypto.randomUUID();
+
+    await supabase.from("email_send_log").insert({
+      message_id: messageId,
+      template_name: "dp_request_verification",
+      recipient_email: opts.email,
+      status: "pending",
+    });
+
+    const { error } = await supabase.rpc("enqueue_email", {
+      queue_name: "transactional_emails",
+      payload: {
+        message_id: messageId,
+        to: opts.email,
+        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+        subject: `Confirm your request — ${opts.reference}`,
+        html,
+        text,
+        purpose: "transactional",
+        label: "dp-request-verification",
+      },
+    });
+
+    if (error) {
+      console.error("dp-request enqueue_email failed", error.message);
+      await supabase.from("email_send_log").insert({
+        message_id: crypto.randomUUID(),
+        template_name: "dp_request_verification",
+        recipient_email: opts.email,
+        status: "failed",
+        error_message: "Failed to enqueue email",
+      });
+    }
+  } catch (e) {
+    console.error("dp-request sendVerificationEmail error", e);
+  }
+}
 
 function json(payload: Record<string, unknown>, status: number): Response {
   return new Response(JSON.stringify(payload), {
