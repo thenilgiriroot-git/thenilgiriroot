@@ -243,9 +243,15 @@ create table if not exists public.breach_register (
   -- Notification tracking. The Draft DPDP Rules require intimation to affected
   -- principals without delay, and a detailed report to the Board within 72
   -- hours of becoming aware. board_report_due_at is computed from detected_at.
+  --
+  -- Not a generated column: `timestamptz + interval` is STABLE, not IMMUTABLE
+  -- (its result depends on the session timezone across a DST boundary), and
+  -- Postgres requires generated-column expressions to be immutable. A
+  -- BEFORE INSERT/UPDATE trigger (breach_set_report_due_at, below) sets it
+  -- instead, at UTC, so the deadline itself never shifts under DST.
   principals_notified_at   timestamptz,
   board_intimated_at       timestamptz,
-  board_report_due_at      timestamptz generated always as (detected_at + interval '72 hours') stored,
+  board_report_due_at      timestamptz,
   board_reported_at        timestamptz,
   board_reference          text,
 
@@ -263,6 +269,21 @@ comment on column public.breach_register.notification_decision is
 
 create index if not exists breach_status_idx on public.breach_register (status, board_report_due_at);
 alter table public.breach_register enable row level security;
+
+create or replace function public.breach_set_report_due_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.board_report_due_at := new.detected_at + interval '72 hours';
+  return new;
+end;
+$$;
+
+drop trigger if exists breach_set_report_due_at on public.breach_register;
+create trigger breach_set_report_due_at
+  before insert or update of detected_at on public.breach_register
+  for each row execute function public.breach_set_report_due_at();
 
 drop trigger if exists breach_touch_updated_at on public.breach_register;
 create trigger breach_touch_updated_at
