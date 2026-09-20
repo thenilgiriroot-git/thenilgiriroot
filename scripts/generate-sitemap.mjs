@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SITEMAP = join(ROOT, "public", "sitemap.xml");
-const SITE_URL = "https://thenilgiriroot.com";
+const SITE_URL = "https://www.thenilgiriroot.com";
 
 const today = new Date().toISOString().slice(0, 10);
 

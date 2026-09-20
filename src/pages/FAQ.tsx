@@ -76,8 +76,8 @@ const breadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: "https://thenilgiriroot.com" },
-    { "@type": "ListItem", position: 2, name: "FAQ", item: "https://thenilgiriroot.com/faq" },
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.thenilgiriroot.com" },
+    { "@type": "ListItem", position: 2, name: "FAQ", item: "https://www.thenilgiriroot.com/faq" },
   ],
 };
 

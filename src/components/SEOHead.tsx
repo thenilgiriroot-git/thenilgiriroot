@@ -12,7 +12,7 @@ interface SEOProps {
   jsonLd?: Record<string, unknown>;
 }
 
-const SITE_URL = "https://thenilgiriroot.com";
+const SITE_URL = "https://www.thenilgiriroot.com";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 
 const defaultMeta = {

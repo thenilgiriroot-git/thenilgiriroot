@@ -5,7 +5,7 @@
  * Designed for high commercial / local intent on Google.
  *
  * Conventions:
- *  - `slug` is appended to https://thenilgiriroot.com/ (no leading slash here)
+ *  - `slug` is appended to https://www.thenilgiriroot.com/ (no leading slash here)
  *  - `keyword` is the single primary phrase. Use it ONCE in title, H1, intro.
  *  - `secondaryKeywords` = semantic variations used naturally across sections.
  *  - `kind` controls subtle template variants ("location" | "buyer" | "size" | "pack").

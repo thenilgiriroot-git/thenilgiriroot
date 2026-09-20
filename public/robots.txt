@@ -1,5 +1,5 @@
 # Robots.txt for The Nilgiri Root
-# https://thenilgiriroot.com
+# https://www.thenilgiriroot.com
 
 User-agent: *
 Allow: /
@@ -26,4 +26,4 @@ User-agent: LinkedInBot
 Allow: /
 
 # Sitemap
-Sitemap: https://thenilgiriroot.com/sitemap.xml
+Sitemap: https://www.thenilgiriroot.com/sitemap.xml

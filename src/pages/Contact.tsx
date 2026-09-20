@@ -23,14 +23,14 @@ const PLUS_CODE_ADDRESS = "FJJX+2G4 Sholur, Tamil Nadu, India";
 const contactJsonLd = {
   "@context": "https://schema.org",
   "@type": "ContactPage",
-  url: "https://thenilgiriroot.com/contact",
+  url: "https://www.thenilgiriroot.com/contact",
   name: "Contact Frozen French Fries Supplier in India | The Nilgiri Root",
   mainEntity: {
     "@type": "Organization",
     name: "The Nilgiri Root",
     telephone: "+91-75399-31361",
     email: "admin@thenilgiriroot.com",
-    url: "https://thenilgiriroot.com",
+    url: "https://www.thenilgiriroot.com",
     areaServed: { "@type": "Country", name: "India" },
     address: {
       "@type": "PostalAddress",
@@ -52,8 +52,8 @@ const contactJsonLd = {
   breadcrumb: {
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://thenilgiriroot.com" },
-      { "@type": "ListItem", position: 2, name: "Contact", item: "https://thenilgiriroot.com/contact" },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.thenilgiriroot.com" },
+      { "@type": "ListItem", position: 2, name: "Contact", item: "https://www.thenilgiriroot.com/contact" },
     ],
   },
 };

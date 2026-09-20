@@ -101,7 +101,7 @@ export const LEGAL_ENTITY: LegalEntity = {
   registeredAddress: "TODO: registered office address on file with the GST registration",
   operationalAddress: "FJJX+2G4 Sholur, Sholur, The Nilgiris, Tamil Nadu 643005, India",
 
-  websiteUrl: "https://thenilgiriroot.com",
+  websiteUrl: "https://www.thenilgiriroot.com",
   generalEmail: "admin@thenilgiriroot.com",
   phone: "+91 75399 31361",
 
