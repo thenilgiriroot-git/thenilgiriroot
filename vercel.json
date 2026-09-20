@@ -13,7 +13,8 @@
     { "source": "/admin", "destination": "/index.html" },
     { "source": "/auth", "destination": "/index.html" },
     { "source": "/whatsapp-sent", "destination": "/index.html" },
-    { "source": "/privacy-dashboard", "destination": "/index.html" }
+    { "source": "/privacy-dashboard", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
