@@ -244,9 +244,9 @@ Named exceptions: `/blog/*` (slugs come from Supabase), `/admin`, `/auth`,
 **Verify after your first deploy:**
 
 ```bash
-curl -I https://thenilgiriroot.com/this-does-not-exist   # expect 404
-curl -I https://thenilgiriroot.com/products              # expect 200
-curl -I https://thenilgiriroot.com/blog/any-real-slug    # expect 200
+curl -I https://www.thenilgiriroot.com/this-does-not-exist   # expect 404
+curl -I https://www.thenilgiriroot.com/products              # expect 200
+curl -I https://www.thenilgiriroot.com/blog/any-real-slug    # expect 200
 ```
 
 If you're not on Netlify or Cloudflare Pages, `_redirects` won't be read and

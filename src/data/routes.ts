@@ -65,4 +65,4 @@ export const LANDING_ROUTES: StaticRoute[] = LANDING_SLUGS.map((slug) => ({
  */
 export const PUBLIC_ROUTES: StaticRoute[] = [...CORE_ROUTES, ...LANDING_ROUTES];
 
-export const SITE_URL = "https://thenilgiriroot.com";
+export const SITE_URL = "https://www.thenilgiriroot.com";

@@ -216,7 +216,7 @@ indexed — `/admin`, `/auth`, the 404, and the blog not-found state. **This
 matters more than it looks:** the SPA answers every URL with HTTP 200, so
 without `noIndex` a dead link becomes an indexable soft 404.
 
-`og:image` defaults to `https://thenilgiriroot.com/og-image.jpg` (1200×630).
+`og:image` defaults to `https://www.thenilgiriroot.com/og-image.jpg` (1200×630).
 Relative `ogImage` values are resolved against the site URL.
 
 ### Structured data
@@ -247,7 +247,7 @@ curl -X POST https://<SUPABASE_URL>/functions/v1/indexnow-submit \
 
 Verification meta tags are commented placeholders in `index.html`
 (`google-site-verification`, `msvalidate.01`). Uncomment, add the code, deploy,
-then submit `https://thenilgiriroot.com/sitemap.xml`.
+then submit `https://www.thenilgiriroot.com/sitemap.xml`.
 
 ---
 

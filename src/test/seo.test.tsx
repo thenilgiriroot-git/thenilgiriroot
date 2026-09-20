@@ -19,7 +19,7 @@ describe("SEOHead", () => {
     await waitFor(() => expect(document.title).toBe("Products | TNR"));
     expect(meta('meta[name="description"]')).toBe("Our fry range.");
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe(
-      "https://thenilgiriroot.com/products",
+      "https://www.thenilgiriroot.com/products",
     );
   });
 
@@ -40,7 +40,7 @@ describe("SEOHead", () => {
 
     await waitFor(() => expect(meta('meta[property="og:image"]')).toBeTruthy());
     const og = meta('meta[property="og:image"]')!;
-    expect(og).toMatch(/^https:\/\/thenilgiriroot\.com\//);
+    expect(og).toMatch(/^https:\/\/www\.thenilgiriroot\.com\//);
     expect(og).not.toContain("storage.googleapis.com");
   });
 
@@ -49,7 +49,7 @@ describe("SEOHead", () => {
 
     await waitFor(() =>
       expect(meta('meta[property="og:image"]')).toBe(
-        "https://thenilgiriroot.com/blog/iqf-processing.jpg",
+        "https://www.thenilgiriroot.com/blog/iqf-processing.jpg",
       ),
     );
   });

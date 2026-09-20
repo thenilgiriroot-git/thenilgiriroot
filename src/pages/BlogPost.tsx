@@ -303,7 +303,7 @@ export default function BlogPost() {
             "@type": "Article",
             headline: post.title,
             description: post.excerpt,
-            image: post.featured_image || "https://thenilgiriroot.com/logo.png",
+            image: post.featured_image || "https://www.thenilgiriroot.com/logo.png",
             datePublished: post.published_at,
             author: {
               "@type": "Organization",
@@ -314,7 +314,7 @@ export default function BlogPost() {
               name: "The Nilgiri Root",
               logo: {
                 "@type": "ImageObject",
-                url: "https://thenilgiriroot.com/logo.png",
+                url: "https://www.thenilgiriroot.com/logo.png",
               },
             },
           }),

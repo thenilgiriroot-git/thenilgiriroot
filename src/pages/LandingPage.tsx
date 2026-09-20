@@ -13,7 +13,7 @@ import SEOHead from "@/components/SEOHead";
 import InlineRfqForm from "@/components/InlineRfqForm";
 import { LANDING_PAGES_BY_SLUG, type LandingPageData } from "@/data/landingPages";
 
-const SITE_URL = "https://thenilgiriroot.com";
+const SITE_URL = "https://www.thenilgiriroot.com";
 
 function buildJsonLd(p: LandingPageData) {
   const graph: Record<string, unknown>[] = [
