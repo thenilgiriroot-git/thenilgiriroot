@@ -1,6 +1,24 @@
 project_id = "hfyxygnezvdyqnprxosr"
 
+# Browser-facing functions are called with the project's publishable key
+# (sb_publishable_...), which is not a JWT, so the gateway JWT check must be
+# off. Each of these enforces its own protection (rate limits, honeypot,
+# admin password) inside the function.
 [functions]
+  [functions.submit-lead]
+    verify_jwt = false
+  [functions.contact-fallback]
+    verify_jwt = false
+  [functions.consent-log]
+    verify_jwt = false
+  [functions.dp-request]
+    verify_jwt = false
+  [functions.rootbot-chat]
+    verify_jwt = false
+  [functions.admin-stats]
+    verify_jwt = false
+  [functions.generate-blog-post]
+    verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.process-email-queue]

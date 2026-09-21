@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { anthropicCall, toOpenAiSse } from "../_shared/anthropic.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -164,23 +165,15 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...safeMessages,
-        ],
-        stream: true,
-      }),
+    const response = await anthropicCall(ANTHROPIC_API_KEY, {
+      model: Deno.env.get("ROOTBOT_MODEL") ?? "claude-haiku-4-5-20251001",
+      system: SYSTEM_PROMPT,
+      messages: safeMessages,
+      maxTokens: 1024,
+      stream: true,
     });
 
     if (!response.ok) {
@@ -209,7 +202,7 @@ serve(async (req) => {
       message_count: safeMessages.length,
     }).catch((e) => console.error("log error", e));
 
-    return new Response(response.body, {
+    return new Response(toOpenAiSse(response.body!), {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {

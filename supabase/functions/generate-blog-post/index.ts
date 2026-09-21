@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { anthropicCall, extractJsonObject } from "../_shared/anthropic.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,7 +86,7 @@ serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
     ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     : null;
@@ -133,8 +134,8 @@ serve(async (req) => {
 
     const { topic, category, tags } = await req.json();
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
 
@@ -175,20 +176,11 @@ Respond with a JSON object containing:
   "reading_time_minutes": estimated reading time as number
 }`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-      }),
+    const response = await anthropicCall(ANTHROPIC_API_KEY, {
+      model: Deno.env.get("BLOG_MODEL") ?? "claude-sonnet-5",
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+      maxTokens: 4096,
     });
 
     if (!response.ok) {
@@ -210,15 +202,15 @@ Respond with a JSON object containing:
     }
 
     const aiResult = await response.json();
-    const content = aiResult.choices?.[0]?.message?.content;
-    
+    const content = aiResult.content?.find((b: { type: string }) => b.type === "text")?.text;
+
     if (!content) {
       throw new Error("No content generated");
     }
 
     let blogData;
     try {
-      blogData = JSON.parse(content);
+      blogData = extractJsonObject(content) as any;
     } catch (e) {
       console.error("Failed to parse AI response:", content);
       throw new Error("Invalid AI response format");
