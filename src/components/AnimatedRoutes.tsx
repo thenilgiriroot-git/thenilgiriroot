@@ -16,7 +16,6 @@ const WhatsAppSent = lazy(() => import("@/pages/WhatsAppSent"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const FAQ = lazy(() => import("@/pages/FAQ"));
 const Solutions = lazy(() => import("@/pages/Solutions"));
-const Auth = lazy(() => import("@/pages/Auth"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const LandingPage = lazy(() => import("@/pages/LandingPage"));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
@@ -74,7 +73,6 @@ export default function AnimatedRoutes() {
           <Route path="/admin" element={<PageTransition><Admin /></PageTransition>} />
           <Route path="/faq" element={<PageTransition><FAQ /></PageTransition>} />
           <Route path="/solutions" element={<PageTransition><Solutions /></PageTransition>} />
-          <Route path="/auth" element={<PageTransition><Auth /></PageTransition>} />
           <Route path="/privacy-policy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
           <Route path="/terms" element={<PageTransition><Terms /></PageTransition>} />
           <Route path="/cookie-policy" element={<PageTransition><CookiePolicy /></PageTransition>} />
