@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const INDEXNOW_KEY = "b4d8f2a1e6c94b7d9f3a5c8e1d7b4f2a";
-const HOST = "thenilgiriroot.com";
+const HOST = "www.thenilgiriroot.com";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });

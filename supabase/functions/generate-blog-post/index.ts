@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { anthropicCall, extractJsonObject } from "../_shared/anthropic.ts";
+import { geminiCall, extractJsonObject } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -86,7 +86,7 @@ serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
   const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
     ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     : null;
@@ -134,8 +134,8 @@ serve(async (req) => {
 
     const { topic, category, tags } = await req.json();
 
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY is not configured");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
 
@@ -176,11 +176,11 @@ Respond with a JSON object containing:
   "reading_time_minutes": estimated reading time as number
 }`;
 
-    const response = await anthropicCall(ANTHROPIC_API_KEY, {
-      model: Deno.env.get("BLOG_MODEL") ?? "claude-sonnet-5",
+    const response = await geminiCall(GEMINI_API_KEY, {
+      model: Deno.env.get("GEMINI_MODEL") ?? "gemini-3.5-flash",
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
-      maxTokens: 4096,
+      json: true,
     });
 
     if (!response.ok) {
@@ -202,7 +202,7 @@ Respond with a JSON object containing:
     }
 
     const aiResult = await response.json();
-    const content = aiResult.content?.find((b: { type: string }) => b.type === "text")?.text;
+    const content = aiResult.choices?.[0]?.message?.content;
 
     if (!content) {
       throw new Error("No content generated");

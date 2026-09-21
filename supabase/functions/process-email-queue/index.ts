@@ -282,7 +282,7 @@ Deno.serve(async (req) => {
 
       try {
         await sendViaResend(apiKey, {
-          from: payload.from,
+          from: payload.from || Deno.env.get('MAIL_FROM') || 'The Nilgiri Root <noreply@thenilgiriroot.com>',
           to: payload.to,
           subject: payload.subject,
           html: payload.html,
