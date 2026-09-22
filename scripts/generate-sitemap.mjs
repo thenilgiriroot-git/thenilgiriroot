@@ -72,7 +72,7 @@ async function fetchBlogPosts(env) {
   try {
     const endpoint =
       `${url}/rest/v1/blog_posts` +
-      `?select=slug,updated_at,published_at&published=eq.true&order=published_at.desc`;
+      `?select=slug,updated_at,published_at&status=eq.published&order=published_at.desc`;
 
     const res = await fetch(endpoint, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },

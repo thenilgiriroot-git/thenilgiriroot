@@ -68,6 +68,57 @@ async function loadRoutes() {
   return all;
 }
 
+// Reads .env the same way generate-sitemap.mjs does, so a local `npm run
+// build` picks up credentials without extra setup; CI supplies these as
+// real environment variables instead, which take precedence.
+async function loadEnvFile() {
+  const envPath = join(ROOT, ".env");
+  if (!existsSync(envPath)) return {};
+  const out = {};
+  for (const line of (await readFile(envPath, "utf8")).split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/i);
+    if (m) out[m[1]] = m[2].replace(/^["']|["']$/g, "");
+  }
+  return out;
+}
+
+/**
+ * Blog post pages are dynamic content, not in the static route manifest, so
+ * they were never prerendered — crawlers that skip JS saw only the generic
+ * /blog listing shell, never the actual article. Fetch published slugs from
+ * Supabase, same query as generate-sitemap.mjs, and prerender each one too.
+ */
+async function loadBlogRoutes() {
+  const fileEnv = await loadEnvFile();
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || fileEnv.VITE_SUPABASE_URL || fileEnv.SUPABASE_URL;
+  const key =
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    fileEnv.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    fileEnv.SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) {
+    console.warn("  Supabase credentials not found — skipping blog post prerendering.");
+    return [];
+  }
+
+  try {
+    const res = await fetch(`${url}/rest/v1/blog_posts?select=slug&status=eq.published`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) {
+      console.warn(`  Supabase returned ${res.status} — skipping blog post prerendering.`);
+      return [];
+    }
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return [];
+    return rows.filter((r) => r.slug).map((r) => `/blog/${r.slug}`);
+  } catch (err) {
+    console.warn(`  Could not reach Supabase (${err.message}) — skipping blog post prerendering.`);
+    return [];
+  }
+}
+
 /**
  * A path that matches no route, used to render the 404 body.
  *
@@ -101,7 +152,9 @@ function serve() {
 }
 
 const server = await serve();
-const routes = [...(await loadRoutes()), NOT_FOUND_PROBE];
+const blogRoutes = await loadBlogRoutes();
+const routes = [...(await loadRoutes()), ...blogRoutes, NOT_FOUND_PROBE];
+if (blogRoutes.length > 0) console.log(`  Including ${blogRoutes.length} blog post route(s) from Supabase.`);
 
 // A unique profile per run, cleaned up at the end. Puppeteer's default temp
 // profile can survive a killed build; on Windows a leftover `lockfile` there
