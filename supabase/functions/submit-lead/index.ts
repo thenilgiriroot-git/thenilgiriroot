@@ -217,13 +217,53 @@ Deno.serve(async (req) => {
   const webhookUrl = Deno.env.get("LEAD_WEBHOOK_URL");
   const webhookSecret = Deno.env.get("LEAD_WEBHOOK_SECRET");
   if (!webhookUrl || !webhookSecret) {
-    console.error("webhook env not configured");
+    // No Google Sheet webhook configured: notify the owner by email through the
+    // transactional queue (delivered by process-email-queue via Resend).
+    const esc = (v: string) =>
+      v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const rows: [string, string][] = [
+      ["Lead ID", lead_id],
+      ["Source", source_type + (source_detail ? " / " + source_detail : "")],
+      ["Name", name],
+      ["Company", company],
+      ["Email", email],
+      ["Phone", phone],
+      ["Message", message],
+      ["Page", page_url],
+      ["Score", String(lead_score)],
+    ];
+    const shown = rows.filter(([, v]) => v);
+    const html =
+      "<h2>New lead: " + esc(name || email || phone) + "</h2><table cellpadding='6'>" +
+      shown.map(([k, v]) => "<tr><td><b>" + k + "</b></td><td>" + esc(v) + "</td></tr>").join("") +
+      "</table>";
+    const text = shown.map(([k, v]) => k + ": " + v).join("\n");
+    const { error: enqErr } = await supabase.rpc("enqueue_email", {
+      queue_name: "transactional_emails",
+      payload: {
+        message_id: "lead-" + lead_id,
+        to: Deno.env.get("LEAD_NOTIFY_EMAIL") ?? Deno.env.get("SECURITY_ALERT_EMAIL") ?? "admin@thenilgiriroot.com",
+        subject: "New " + source_type + " lead: " + (name || email || phone),
+        html,
+        text,
+        label: "lead-notification",
+        purpose: "transactional",
+        queued_at: new Date().toISOString(),
+      },
+    });
+    const notify_status = enqErr ? "failed" : "queued";
     await supabase
       .from("lead_submissions")
-      .update({ sheet_status: "failed", sheet_error: "webhook_env_missing" })
+      .update({
+        sheet_status: "skipped",
+        sheet_error: null,
+        email_status: notify_status,
+        email_error: enqErr ? String(enqErr.message).slice(0, 300) : null,
+      })
       .eq("lead_id", lead_id);
+    if (enqErr) console.error("lead notification enqueue failed", enqErr);
     return new Response(
-      JSON.stringify({ ok: true, lead_id, sheet: "failed", reason: "webhook_env_missing" }),
+      JSON.stringify({ ok: true, lead_id, email_status: notify_status }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { anthropicCall, toOpenAiSse } from "../_shared/anthropic.ts";
+import { geminiCall, textToSse } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -165,20 +165,18 @@ serve(async (req) => {
       });
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
 
-    const response = await anthropicCall(ANTHROPIC_API_KEY, {
-      model: Deno.env.get("ROOTBOT_MODEL") ?? "claude-haiku-4-5-20251001",
+    const response = await geminiCall(GEMINI_API_KEY, {
+      model: Deno.env.get("GEMINI_MODEL") ?? "gemini-3.1-flash-lite",
       system: SYSTEM_PROMPT,
       messages: safeMessages,
-      maxTokens: 1024,
-      stream: true,
     });
 
     if (!response.ok) {
       if (response.status === 429) {
-        await logRequest("rate_limited", 429, ipHash, userAgent, startedAt, "ai_gateway_429");
+        await logRequest("rate_limited", 429, ipHash, userAgent, startedAt, "ai_429");
         return new Response(JSON.stringify({ error: "Too many requests. Please try again in a moment." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -191,7 +189,7 @@ serve(async (req) => {
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      await logRequest("error", 500, ipHash, userAgent, startedAt, `ai_gateway_${response.status}`);
+      await logRequest("error", 500, ipHash, userAgent, startedAt, `ai_${response.status}`);
       return new Response(JSON.stringify({ error: "AI service error" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -202,7 +200,11 @@ serve(async (req) => {
       message_count: safeMessages.length,
     }).catch((e) => console.error("log error", e));
 
-    return new Response(toOpenAiSse(response.body!), {
+    const aiJson = await response.json();
+    const reply: string = aiJson.choices?.[0]?.message?.content ?? "";
+    if (!reply) throw new Error("Empty AI response");
+
+    return new Response(textToSse(reply), {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
