@@ -1,0 +1,55 @@
+name: Prerendered production deploy
+
+# Vercel's own build image can't run Puppeteer (missing Chrome shared
+# libraries), so vercel.json's buildCommand skips prerendering and Vercel's
+# git integration is told to ignore pushes to `main` (see the ignoreCommand
+# in vercel.json) — PR previews still build there as normal. This workflow
+# is the only path to production: it builds with prerendering on a stock
+# Ubuntu runner (which has the libraries Puppeteer needs) and deploys the
+# prebuilt result straight to Vercel.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chrome dependencies for Puppeteer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+            libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
+            libxrandr2 libgbm1 libasound2t64 libpango-1.0-0 libpangocairo-1.0-0 \
+            libx11-xcb1 libxshmfence1 fonts-liberation
+
+      - name: Build (sitemap + vite build + prerender)
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Assemble Vercel Build Output (v3) from dist/
+        run: node scripts/build-vercel-output.mjs
+
+      - name: Deploy prebuilt output to Vercel production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN" --yes
