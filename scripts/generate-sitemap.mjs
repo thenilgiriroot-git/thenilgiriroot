@@ -27,13 +27,17 @@ const today = new Date().toISOString().slice(0, 10);
 
 // ---------- env ----------
 
+// CI (GitHub Actions) supplies credentials as real environment variables, not
+// a .env file, so process.env must win. The .env file is read only to fill in
+// whatever process.env doesn't already have, for local dev convenience.
 async function loadEnv() {
+  const out = { ...process.env };
   const envPath = join(ROOT, ".env");
-  if (!existsSync(envPath)) return {};
-  const out = {};
-  for (const line of (await readFile(envPath, "utf8")).split(/\r?\n/)) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/i);
-    if (m) out[m[1]] = m[2].replace(/^["']|["']$/g, "");
+  if (existsSync(envPath)) {
+    for (const line of (await readFile(envPath, "utf8")).split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/i);
+      if (m && !out[m[1]]) out[m[1]] = m[2].replace(/^["']|["']$/g, "");
+    }
   }
   return out;
 }
