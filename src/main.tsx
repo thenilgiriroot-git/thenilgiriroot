@@ -41,8 +41,15 @@ if (typeof window !== "undefined") {
   // it. Removing the overlay before that paint would show a blank ground.
   requestAnimationFrame(() => requestAnimationFrame(retirePreloader));
 
-  // Defer smooth scroll initialization until after first paint
-  requestIdleCallback(
+  // Defer smooth scroll initialization until after first paint. Safari (all
+  // versions, including iPadOS) has never implemented requestIdleCallback —
+  // referencing it directly throws a ReferenceError there, so feature-detect
+  // and fall back to setTimeout, same as the guard in App.tsx.
+  const nativeIdle = (window as Window & { requestIdleCallback?: typeof requestIdleCallback })
+    .requestIdleCallback;
+  const idle = (cb: () => void, opts: { timeout: number }) =>
+    nativeIdle ? nativeIdle(cb, opts) : window.setTimeout(cb, 1500);
+  idle(
     async () => {
       const { default: Lenis } = await import("lenis");
 
