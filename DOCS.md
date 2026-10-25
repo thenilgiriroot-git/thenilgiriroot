@@ -342,7 +342,9 @@ These need a real browser matrix and a deployed URL.
   bundle actually requests. Rollback: rename the key back to
   `Content-Security-Policy-Report-Only`. **Smoke-test on staging before the
   first production deploy** — a CSP failure is invisible server-side.
-- **Other headers** — `X-Frame-Options: DENY`, `X-Content-Type-Options:
+- **Framing** — no `X-Frame-Options`; CSP `frame-ancestors` allows only
+  `'self'` and thepaperplane.co.in (live preview embed).
+- **Other headers** — `X-Content-Type-Options:
   nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a restrictive
   `Permissions-Policy`.
 - **ErrorBoundary** wraps the app with a recovery path.
